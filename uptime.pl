@@ -9,7 +9,7 @@ use Irssi::Irc;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.2 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.3 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'uptime',
 	  authors     => 'Peder Stray',
@@ -75,10 +75,10 @@ sub cmd_uptime {
     $str =~ s/^(0. )+//;
 
     if ($data && $server) {
-	$server->command("/MSG $data uptime: $str");
+	$server->command("MSG $data uptime: $str");
     } elsif ($witem && ($witem->{type} eq "CHANNEL" ||
 			$witem->{type} eq "QUERY")) {
-	$witem->command("/MSG ".$witem->{name}." uptime: $str");
+	$witem->command("MSG ".$witem->{name}." uptime: $str");
     } else {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'uptime',
 			   $str, $sysname);
