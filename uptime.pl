@@ -9,7 +9,7 @@ use Irssi::Irc;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.1 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.2 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'uptime',
 	  authors     => 'Peder Stray',
@@ -18,10 +18,6 @@ use vars qw{$VERSION %IRSSI};
 	  license     => 'GPL',
 	  description => 'Try a little harder to figure out uptime',
 	 );
-
-# ======[ Variables ]===================================================
-
-my($system_type);
 
 # ======[ Helper functions ]============================================
 
@@ -60,10 +56,11 @@ sub uptime_solaris {
 sub cmd_uptime {
     my($data,$server,$witem) = @_;
     my($time);
+    my($sysname) = Irssi::parse_special('$sysname');
 
-    if ($system_type eq 'linux') {
+    if ($sysname eq 'Linux') {
 	$time = uptime_linux;
-    } elsif ($system_type eq 'sunos') {
+    } elsif ($sysname eq 'SunOS') {
 	$time = uptime_solaris;
     } else {
 	$time = time - $^T;
@@ -84,7 +81,7 @@ sub cmd_uptime {
 	$witem->command("/MSG ".$witem->{name}." uptime: $str");
     } else {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'uptime',
-			   $str, $system_type);
+			   $str, $sysname);
     }
 }
 
@@ -101,10 +98,6 @@ Irssi::theme_register(
  'uptime',
  '{line_start}{hilight Uptime:} $0 ($1)',
 ]);
-
-# --------[ initialization ]--------------------------------------------
-
-chomp($system_type = lc `uname -s`);
 
 # ======[ END ]=========================================================
 
