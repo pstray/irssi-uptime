@@ -1,23 +1,29 @@
 #
-# Copyright (C) 2002 by Peder Stray <peder@ninja.no>
+# Copyright (C) 2002-2003 by Peder Stray <peder@ninja.no>
 #
 
 use strict;
 use Irssi;
 use Irssi::Irc;
+use Irssi::TextUI;
 
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.3 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.6 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'uptime',
 	  authors     => 'Peder Stray',
 	  contact     => 'peder@ninja.no',
 	  url         => 'http://ninja.no/irssi/uptime.pl',
 	  license     => 'GPL',
-	  description => 'Try a little harder to figure out uptime',
+	  description => 'Try a little harder to figure out client uptime',
+	  sbitem      => 'uptime',
 	 );
+
+# ======[ Variables ]===================================================
+
+my($timer) = 0;			# ID of current timer
 
 # ======[ Helper functions ]============================================
 
@@ -49,14 +55,11 @@ sub uptime_solaris {
     return $irssi_start;
 }
 
-# ======[ Commands ]====================================================
+# --------[ uptime ]----------------------------------------------------
 
-# --------[ cmd_uptime ]------------------------------------------------
-
-sub cmd_uptime {
-    my($data,$server,$witem) = @_;
+sub uptime {
+    my($sysname) = @_;
     my($time);
-    my($sysname) = Irssi::parse_special('$sysname');
 
     if ($sysname eq 'Linux') {
 	$time = uptime_linux;
@@ -66,13 +69,34 @@ sub cmd_uptime {
 	$time = time - $^T;
     }
 
-    my(@time,$str);
+    return $time;
+}
+
+# --------[ format_interval ]-------------------------------------------
+
+sub format_interval {
+    my($interval) = @_;
+
+    my(@interval,$str);
     for (60, 60, 24, 365) {
-	push @time, $time%$_;
-	$time = int($time/$_);
+	push @interval, $interval%$_;
+	$interval = int($interval/$_);
     }
-    $str = sprintf "%dy %dd %dh %dm %ds", $time, @time[3,2,1,0];
+    $str = sprintf "%dy %dd %dh %dm %ds", $interval, @interval[3,2,1,0];
     $str =~ s/^(0. )+//;
+
+    return $str;
+}
+
+# ======[ Commands ]====================================================
+
+# --------[ cmd_uptime ]------------------------------------------------
+
+sub cmd_uptime {
+    my($data,$server,$witem) = @_;
+    my($sysname) = Irssi::parse_special('$sysname');
+    my($uptime) = uptime($sysname);
+    my($str) = format_interval($uptime);
 
     if ($data && $server) {
 	$server->command("MSG $data uptime: $str");
@@ -83,6 +107,48 @@ sub cmd_uptime {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'uptime',
 			   $str, $sysname);
     }
+}
+
+# ======[ Signal Hooks ]================================================
+
+# --------[ sig_setup_changed ]-----------------------------------------
+
+sub sig_setup_changed {
+    my($interval) = Irssi::settings_get_int('uptime_refresh_interval');
+
+    Irssi::timeout_remove($timer);
+
+    if ($interval < 1) {
+	$interval = 0;
+    }
+
+    return unless $interval;
+
+    $interval *= 1000;
+    $timer = Irssi::timeout_add($interval, 'uptime_refresh' , undef);
+}
+
+# ======[ Statusbar Hooks ]=============================================
+
+# --------[ sb_uptime ]-------------------------------------------------
+
+sub sb_uptime {
+    my($item, $get_size_only) = @_;
+    my $format = "";
+    my($uptime) = uptime(Irssi::parse_special('$sysname'));
+    my($time) = format_interval($uptime);
+
+    $format = "{sb %g$time%n}";
+
+    $item->default_handler($get_size_only, $format, undef, 1);
+}
+
+# ======[ Timers ]======================================================
+
+# --------[ uptime_refresh ]--------------------------------------------
+
+sub uptime_refresh {
+    Irssi::statusbar_items_redraw('uptime');
 }
 
 # ======[ Setup ]=======================================================
@@ -98,6 +164,22 @@ Irssi::theme_register(
  'uptime',
  '{line_start}{hilight Uptime:} $0 ($1)',
 ]);
+
+# --------[ Register settings ]-----------------------------------------
+
+Irssi::settings_add_int('upgrade', 'uptime_refresh_interval', 12);
+
+# --------[ Register signals ]------------------------------------------
+
+Irssi::signal_add('setup changed', 'sig_setup_changed');
+
+# --------[ Register statusbar items ]----------------------------------
+
+Irssi::statusbar_item_register('uptime', undef, 'sb_uptime');
+
+# --------[ Other setup ]-----------------------------------------------
+
+sig_setup_changed;
 
 # ======[ END ]=========================================================
 
