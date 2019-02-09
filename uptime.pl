@@ -1,13 +1,11 @@
 #
-# Copyright (C) 2002-2003 by Peder Stray <peder@ninja.no>
+# Copyright (C) 2002-2019 by Peder Stray <peder@ninja.no>
 #
 
 use strict;
 use Irssi;
 use Irssi::Irc;
 use Irssi::TextUI;
-
-# ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
 ($VERSION) = '$Revision: 1.6 $' =~ / (\d+\.\d+) /;
@@ -21,13 +19,7 @@ use vars qw{$VERSION %IRSSI};
 	  sbitem      => 'uptime',
 	 );
 
-# ======[ Variables ]===================================================
-
 my($timer) = 0;			# ID of current timer
-
-# ======[ Helper functions ]============================================
-
-# --------[ uptime_linux ]----------------------------------------------
 
 sub uptime_linux {
     my($sys_uptime);
@@ -45,8 +37,6 @@ sub uptime_linux {
     return $sys_uptime - $irssi_start/100;
 }
 
-# --------[ uptime_solaris ]--------------------------------------------
-
 sub uptime_solaris {
     my($irssi_start);
 
@@ -54,8 +44,6 @@ sub uptime_solaris {
 
     return $irssi_start;
 }
-
-# --------[ uptime ]----------------------------------------------------
 
 sub uptime {
     my($sysname) = @_;
@@ -72,8 +60,6 @@ sub uptime {
     return $time;
 }
 
-# --------[ format_interval ]-------------------------------------------
-
 sub format_interval {
     my($interval) = @_;
 
@@ -87,10 +73,6 @@ sub format_interval {
 
     return $str;
 }
-
-# ======[ Commands ]====================================================
-
-# --------[ cmd_uptime ]------------------------------------------------
 
 sub cmd_uptime {
     my($data,$server,$witem) = @_;
@@ -109,10 +91,6 @@ sub cmd_uptime {
     }
 }
 
-# ======[ Signal Hooks ]================================================
-
-# --------[ sig_setup_changed ]-----------------------------------------
-
 sub sig_setup_changed {
     my($interval) = Irssi::settings_get_int('uptime_refresh_interval');
 
@@ -128,10 +106,6 @@ sub sig_setup_changed {
     $timer = Irssi::timeout_add($interval, 'uptime_refresh' , undef);
 }
 
-# ======[ Statusbar Hooks ]=============================================
-
-# --------[ sb_uptime ]-------------------------------------------------
-
 sub sb_uptime {
     my($item, $get_size_only) = @_;
     my $format = "";
@@ -143,21 +117,11 @@ sub sb_uptime {
     $item->default_handler($get_size_only, $format, undef, 1);
 }
 
-# ======[ Timers ]======================================================
-
-# --------[ uptime_refresh ]--------------------------------------------
-
 sub uptime_refresh {
     Irssi::statusbar_items_redraw('uptime');
 }
 
-# ======[ Setup ]=======================================================
-
-# --------[ Register commands ]-----------------------------------------
-
 Irssi::command_bind('uptime', 'cmd_uptime');
-
-# --------[ Register formats ]------------------------------------------
 
 Irssi::theme_register(
 [
@@ -165,25 +129,10 @@ Irssi::theme_register(
  '{line_start}{hilight Uptime:} $0 ($1)',
 ]);
 
-# --------[ Register settings ]-----------------------------------------
-
 Irssi::settings_add_int('upgrade', 'uptime_refresh_interval', 12);
-
-# --------[ Register signals ]------------------------------------------
 
 Irssi::signal_add('setup changed', 'sig_setup_changed');
 
-# --------[ Register statusbar items ]----------------------------------
-
 Irssi::statusbar_item_register('uptime', undef, 'sb_uptime');
 
-# --------[ Other setup ]-----------------------------------------------
-
 sig_setup_changed;
-
-# ======[ END ]=========================================================
-
-# Local Variables:
-# header-initial-hide: t
-# mode: header-minor
-# end:
